@@ -175,7 +175,7 @@ get_commit_history <- function (gh_cli, org = "ropensci", repo,
     return (dat)
 }
 
-summarise_commit_history <- function (gh_cli, org = "ropensci", repo)
+process_commit_history <- function (gh_cli, org = "ropensci", repo)
 {
     branch <- default_branch_name (gh_cli, org, repo) [1]
     if (is.null (branch)) # if repo does not exist on ropensci, like auk
@@ -184,10 +184,10 @@ summarise_commit_history <- function (gh_cli, org = "ropensci", repo)
     dat <- get_commit_history (gh_cli, org, repo, branch)
     dat <- do.call (rbind, dat)
 
-    # then find user name from three potential columns of (login, user.name, name)
+    # find a unique name from three potential columns of (login, user.name, name)
     full_name <- function (i) stringr::str_count (i, "\\w+") > 1
     user <- dat$user.name
-    index <- which (!full_name (user))
+    index <- which (!full_name (user) | is.na (user))
     user [index] <- dat$name [index]
     # find whether any names are non-spaced versions of full names
     users <- unique (tolower (user))
@@ -203,53 +203,8 @@ summarise_commit_history <- function (gh_cli, org = "ropensci", repo)
         }
     }
 
-    # summarise:
-    data.frame (date = dat$committedDate,
-                       additions = dat$additions,
-                       name = user,
-                       stringsAsFactors = FALSE) %>%
-        group_by (name) %>%
-        summarise (ncommits = length (additions),
-                   nlines = sum (additions)) %>%
-        arrange (desc (ncommits), desc (nlines)) %>%
-        filter (!is.na (name))
+    data.frame (date = as.Date (dat$committedDate, "%Y-%m-%d"),
+                additions = dat$additions,
+                name = user,
+                stringsAsFactors = FALSE)
 }
-
-# authors is result of first function above
-overall_summary <- function (gh_cli, org = "ropensci", repo, authors)
-{
-    x <- summarise_commit_history (gh_cli, org, repo)
-    if (is.null (x)) # empty repo
-        return (NULL)
-
-    authors_i <- tolower (authors [[repo]])
-    authors_index <- which (!is.na (pmatch (tolower (x$name), authors_i)))
-
-    # summary of official authorial contributions versus unacknowledged:
-    ncommits_authors <- sum (x$ncommits [authors_index])
-    nlines_authors <- sum (x$nlines [authors_index])
-    ncommits <- sum (x$ncommits)
-    nlines <- sum (x$nlines)
-    ncommits_non_authors <- ncommits - ncommits_authors
-    nlines_non_authors <- nlines - nlines_authors
-    pccommits_non_authors <- ncommits_non_authors / ncommits
-    pclines_non_authors <- nlines_non_authors / nlines
-
-    # relative contributions of official authors
-    x$nc <- x$ncommits / sum (x$ncommits)
-    x$nl <- x$nlines / sum (x$nlines)
-
-    # summarise with
-    # 1. Number of official authors
-    # 2. Percent of commits contributed by official authors
-    # 3. Percent of lines contributed by official authors
-    # 4. Percent of commits contributed by primary official author
-    # 5. Perfect of lines contributed by primary official author
-
-    c (nauthors = length (authors_index),
-       pc_official_commits = ncommits_authors / ncommits,
-       pc_official_lines = nlines_authors / nlines,
-       pc_author1_commits = x$nc [1],
-       pc_author1_lines = x$nl [1])
-}
-
