@@ -212,4 +212,15 @@ ggplot (stats, aes (date, slope)) +
     facet_grid (.~var, scales = "free")
 ```
 
+Are these changes significant?
+
+```{r summary-of-authors-per-time}
+summary (lm (stats$slope [stats$var == "commits"] ~
+             stats$date [stats$var == "commits"]))
+summary (lm (stats$slope [stats$var == "lines"] ~
+             stats$date [stats$var == "lines"]))
+```
+
+As above, changes for commits are significant; for lines are not
+
 

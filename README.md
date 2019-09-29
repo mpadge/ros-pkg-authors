@@ -119,6 +119,59 @@ stats <- lapply (dat, function (i) {
     })
 ```
 
+    ## Warning in summary.lm(lm(n ~ date)): essentially perfect fit: summary may
+    ## be unreliable
+    
+    ## Warning in summary.lm(lm(n ~ date)): essentially perfect fit: summary may
+    ## be unreliable
+    
+    ## Warning in summary.lm(lm(n ~ date)): essentially perfect fit: summary may
+    ## be unreliable
+    
+    ## Warning in summary.lm(lm(n ~ date)): essentially perfect fit: summary may
+    ## be unreliable
+    
+    ## Warning in summary.lm(lm(n ~ date)): essentially perfect fit: summary may
+    ## be unreliable
+    
+    ## Warning in summary.lm(lm(n ~ date)): essentially perfect fit: summary may
+    ## be unreliable
+    
+    ## Warning in summary.lm(lm(n ~ date)): essentially perfect fit: summary may
+    ## be unreliable
+    
+    ## Warning in summary.lm(lm(n ~ date)): essentially perfect fit: summary may
+    ## be unreliable
+    
+    ## Warning in summary.lm(lm(n ~ date)): essentially perfect fit: summary may
+    ## be unreliable
+    
+    ## Warning in summary.lm(lm(n ~ date)): essentially perfect fit: summary may
+    ## be unreliable
+    
+    ## Warning in summary.lm(lm(n ~ date)): essentially perfect fit: summary may
+    ## be unreliable
+    
+    ## Warning in summary.lm(lm(n ~ date)): essentially perfect fit: summary may
+    ## be unreliable
+    
+    ## Warning in summary.lm(lm(n ~ date)): essentially perfect fit: summary may
+    ## be unreliable
+    
+    ## Warning in summary.lm(lm(n ~ date)): essentially perfect fit: summary may
+    ## be unreliable
+    
+    ## Warning in summary.lm(lm(n ~ date)): essentially perfect fit: summary may
+    ## be unreliable
+    
+    ## Warning in summary.lm(lm(n ~ date)): essentially perfect fit: summary may
+    ## be unreliable
+    
+    ## Warning in summary.lm(lm(n ~ date)): essentially perfect fit: summary may
+    ## be unreliable
+    
+    ## Warning in summary.lm(lm(n ~ date)): essentially perfect fit: summary may
+    ## be unreliable
 
 ``` r
 stats <- data.frame (do.call (rbind, stats)) %>%
@@ -265,6 +318,62 @@ stats <- lapply (dat, function (i) {
     })
 ```
 
+    ## Warning in summary.lm(lm(n ~ seq(n))): essentially perfect fit: summary may
+    ## be unreliable
+    
+    ## Warning in summary.lm(lm(n ~ seq(n))): essentially perfect fit: summary may
+    ## be unreliable
+    
+    ## Warning in summary.lm(lm(n ~ seq(n))): essentially perfect fit: summary may
+    ## be unreliable
+    
+    ## Warning in summary.lm(lm(n ~ seq(n))): essentially perfect fit: summary may
+    ## be unreliable
+    
+    ## Warning in summary.lm(lm(n ~ seq(n))): essentially perfect fit: summary may
+    ## be unreliable
+    
+    ## Warning in summary.lm(lm(n ~ seq(n))): essentially perfect fit: summary may
+    ## be unreliable
+    
+    ## Warning in summary.lm(lm(n ~ seq(n))): essentially perfect fit: summary may
+    ## be unreliable
+    
+    ## Warning in summary.lm(lm(n ~ seq(n))): essentially perfect fit: summary may
+    ## be unreliable
+    
+    ## Warning in summary.lm(lm(n ~ seq(n))): essentially perfect fit: summary may
+    ## be unreliable
+    
+    ## Warning in summary.lm(lm(n ~ seq(n))): essentially perfect fit: summary may
+    ## be unreliable
+    
+    ## Warning in summary.lm(lm(n ~ seq(n))): essentially perfect fit: summary may
+    ## be unreliable
+    
+    ## Warning in summary.lm(lm(n ~ seq(n))): essentially perfect fit: summary may
+    ## be unreliable
+    
+    ## Warning in summary.lm(lm(n ~ seq(n))): essentially perfect fit: summary may
+    ## be unreliable
+    
+    ## Warning in summary.lm(lm(n ~ seq(n))): essentially perfect fit: summary may
+    ## be unreliable
+    
+    ## Warning in summary.lm(lm(n ~ seq(n))): essentially perfect fit: summary may
+    ## be unreliable
+    
+    ## Warning in summary.lm(lm(n ~ seq(n))): essentially perfect fit: summary may
+    ## be unreliable
+    
+    ## Warning in summary.lm(lm(n ~ seq(n))): essentially perfect fit: summary may
+    ## be unreliable
+    
+    ## Warning in summary.lm(lm(n ~ seq(n))): essentially perfect fit: summary may
+    ## be unreliable
+    
+    ## Warning in summary.lm(lm(n ~ seq(n))): essentially perfect fit: summary may
+    ## be unreliable
 
 ``` r
 stats <- stats [which (!sapply (stats, is.null))]
@@ -277,3 +386,58 @@ ggplot (stats, aes (date, slope)) +
 ```
 
 ![](authors-per-time-interval.png)<!-- -->
+
+Are these changes significant?
+
+``` r
+summary (lm (stats$slope [stats$var == "commits"] ~
+             stats$date [stats$var == "commits"]))
+```
+
+    ## 
+    ## Call:
+    ## lm(formula = stats$slope[stats$var == "commits"] ~ stats$date[stats$var == 
+    ##     "commits"])
+    ## 
+    ## Residuals:
+    ##      Min       1Q   Median       3Q      Max 
+    ## -0.65834 -0.17729  0.04009  0.23164  0.39455 
+    ## 
+    ## Coefficients:
+    ##                                      Estimate Std. Error t value Pr(>|t|)
+    ## (Intercept)                        -34.423917  14.535490  -2.368   0.0183
+    ## stats$date[stats$var == "commits"]   0.016903   0.007207   2.345   0.0195
+    ##                                     
+    ## (Intercept)                        *
+    ## stats$date[stats$var == "commits"] *
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## Residual standard error: 0.2742 on 398 degrees of freedom
+    ## Multiple R-squared:  0.01363,    Adjusted R-squared:  0.01115 
+    ## F-statistic: 5.501 on 1 and 398 DF,  p-value: 0.0195
+
+``` r
+summary (lm (stats$slope [stats$var == "lines"] ~
+             stats$date [stats$var == "lines"]))
+```
+
+    ## 
+    ## Call:
+    ## lm(formula = stats$slope[stats$var == "lines"] ~ stats$date[stats$var == 
+    ##     "lines"])
+    ## 
+    ## Residuals:
+    ##      Min       1Q   Median       3Q      Max 
+    ## -0.51396 -0.37189  0.06667  0.28661  0.55334 
+    ## 
+    ## Coefficients:
+    ##                                    Estimate Std. Error t value Pr(>|t|)
+    ## (Intercept)                      -24.121576  18.305120  -1.318    0.188
+    ## stats$date[stats$var == "lines"]   0.011705   0.009076   1.290    0.198
+    ## 
+    ## Residual standard error: 0.3453 on 398 degrees of freedom
+    ## Multiple R-squared:  0.004162,   Adjusted R-squared:  0.00166 
+    ## F-statistic: 1.663 on 1 and 398 DF,  p-value: 0.1979
+
+As above, changes for commits are significant; for lines are not
