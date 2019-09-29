@@ -119,59 +119,6 @@ stats <- lapply (dat, function (i) {
     })
 ```
 
-    ## Warning in summary.lm(lm(n ~ date)): essentially perfect fit: summary may
-    ## be unreliable
-    
-    ## Warning in summary.lm(lm(n ~ date)): essentially perfect fit: summary may
-    ## be unreliable
-    
-    ## Warning in summary.lm(lm(n ~ date)): essentially perfect fit: summary may
-    ## be unreliable
-    
-    ## Warning in summary.lm(lm(n ~ date)): essentially perfect fit: summary may
-    ## be unreliable
-    
-    ## Warning in summary.lm(lm(n ~ date)): essentially perfect fit: summary may
-    ## be unreliable
-    
-    ## Warning in summary.lm(lm(n ~ date)): essentially perfect fit: summary may
-    ## be unreliable
-    
-    ## Warning in summary.lm(lm(n ~ date)): essentially perfect fit: summary may
-    ## be unreliable
-    
-    ## Warning in summary.lm(lm(n ~ date)): essentially perfect fit: summary may
-    ## be unreliable
-    
-    ## Warning in summary.lm(lm(n ~ date)): essentially perfect fit: summary may
-    ## be unreliable
-    
-    ## Warning in summary.lm(lm(n ~ date)): essentially perfect fit: summary may
-    ## be unreliable
-    
-    ## Warning in summary.lm(lm(n ~ date)): essentially perfect fit: summary may
-    ## be unreliable
-    
-    ## Warning in summary.lm(lm(n ~ date)): essentially perfect fit: summary may
-    ## be unreliable
-    
-    ## Warning in summary.lm(lm(n ~ date)): essentially perfect fit: summary may
-    ## be unreliable
-    
-    ## Warning in summary.lm(lm(n ~ date)): essentially perfect fit: summary may
-    ## be unreliable
-    
-    ## Warning in summary.lm(lm(n ~ date)): essentially perfect fit: summary may
-    ## be unreliable
-    
-    ## Warning in summary.lm(lm(n ~ date)): essentially perfect fit: summary may
-    ## be unreliable
-    
-    ## Warning in summary.lm(lm(n ~ date)): essentially perfect fit: summary may
-    ## be unreliable
-    
-    ## Warning in summary.lm(lm(n ~ date)): essentially perfect fit: summary may
-    ## be unreliable
 
 ``` r
 stats <- data.frame (do.call (rbind, stats)) %>%
@@ -318,62 +265,6 @@ stats <- lapply (dat, function (i) {
     })
 ```
 
-    ## Warning in summary.lm(lm(n ~ seq(n))): essentially perfect fit: summary may
-    ## be unreliable
-    
-    ## Warning in summary.lm(lm(n ~ seq(n))): essentially perfect fit: summary may
-    ## be unreliable
-    
-    ## Warning in summary.lm(lm(n ~ seq(n))): essentially perfect fit: summary may
-    ## be unreliable
-    
-    ## Warning in summary.lm(lm(n ~ seq(n))): essentially perfect fit: summary may
-    ## be unreliable
-    
-    ## Warning in summary.lm(lm(n ~ seq(n))): essentially perfect fit: summary may
-    ## be unreliable
-    
-    ## Warning in summary.lm(lm(n ~ seq(n))): essentially perfect fit: summary may
-    ## be unreliable
-    
-    ## Warning in summary.lm(lm(n ~ seq(n))): essentially perfect fit: summary may
-    ## be unreliable
-    
-    ## Warning in summary.lm(lm(n ~ seq(n))): essentially perfect fit: summary may
-    ## be unreliable
-    
-    ## Warning in summary.lm(lm(n ~ seq(n))): essentially perfect fit: summary may
-    ## be unreliable
-    
-    ## Warning in summary.lm(lm(n ~ seq(n))): essentially perfect fit: summary may
-    ## be unreliable
-    
-    ## Warning in summary.lm(lm(n ~ seq(n))): essentially perfect fit: summary may
-    ## be unreliable
-    
-    ## Warning in summary.lm(lm(n ~ seq(n))): essentially perfect fit: summary may
-    ## be unreliable
-    
-    ## Warning in summary.lm(lm(n ~ seq(n))): essentially perfect fit: summary may
-    ## be unreliable
-    
-    ## Warning in summary.lm(lm(n ~ seq(n))): essentially perfect fit: summary may
-    ## be unreliable
-    
-    ## Warning in summary.lm(lm(n ~ seq(n))): essentially perfect fit: summary may
-    ## be unreliable
-    
-    ## Warning in summary.lm(lm(n ~ seq(n))): essentially perfect fit: summary may
-    ## be unreliable
-    
-    ## Warning in summary.lm(lm(n ~ seq(n))): essentially perfect fit: summary may
-    ## be unreliable
-    
-    ## Warning in summary.lm(lm(n ~ seq(n))): essentially perfect fit: summary may
-    ## be unreliable
-    
-    ## Warning in summary.lm(lm(n ~ seq(n))): essentially perfect fit: summary may
-    ## be unreliable
 
 ``` r
 stats <- stats [which (!sapply (stats, is.null))]
