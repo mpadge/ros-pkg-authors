@@ -119,59 +119,6 @@ stats <- lapply (dat, function (i) {
     })
 ```
 
-    ## Warning in summary.lm(lm(n ~ date)): essentially perfect fit: summary may
-    ## be unreliable
-    
-    ## Warning in summary.lm(lm(n ~ date)): essentially perfect fit: summary may
-    ## be unreliable
-    
-    ## Warning in summary.lm(lm(n ~ date)): essentially perfect fit: summary may
-    ## be unreliable
-    
-    ## Warning in summary.lm(lm(n ~ date)): essentially perfect fit: summary may
-    ## be unreliable
-    
-    ## Warning in summary.lm(lm(n ~ date)): essentially perfect fit: summary may
-    ## be unreliable
-    
-    ## Warning in summary.lm(lm(n ~ date)): essentially perfect fit: summary may
-    ## be unreliable
-    
-    ## Warning in summary.lm(lm(n ~ date)): essentially perfect fit: summary may
-    ## be unreliable
-    
-    ## Warning in summary.lm(lm(n ~ date)): essentially perfect fit: summary may
-    ## be unreliable
-    
-    ## Warning in summary.lm(lm(n ~ date)): essentially perfect fit: summary may
-    ## be unreliable
-    
-    ## Warning in summary.lm(lm(n ~ date)): essentially perfect fit: summary may
-    ## be unreliable
-    
-    ## Warning in summary.lm(lm(n ~ date)): essentially perfect fit: summary may
-    ## be unreliable
-    
-    ## Warning in summary.lm(lm(n ~ date)): essentially perfect fit: summary may
-    ## be unreliable
-    
-    ## Warning in summary.lm(lm(n ~ date)): essentially perfect fit: summary may
-    ## be unreliable
-    
-    ## Warning in summary.lm(lm(n ~ date)): essentially perfect fit: summary may
-    ## be unreliable
-    
-    ## Warning in summary.lm(lm(n ~ date)): essentially perfect fit: summary may
-    ## be unreliable
-    
-    ## Warning in summary.lm(lm(n ~ date)): essentially perfect fit: summary may
-    ## be unreliable
-    
-    ## Warning in summary.lm(lm(n ~ date)): essentially perfect fit: summary may
-    ## be unreliable
-    
-    ## Warning in summary.lm(lm(n ~ date)): essentially perfect fit: summary may
-    ## be unreliable
 
 ``` r
 stats <- data.frame (do.call (rbind, stats)) %>%
@@ -192,7 +139,7 @@ print (g)
 
     ## Warning: Removed 54 rows containing missing values (geom_bar).
 
-![](temporal-analyses-1.png)<!-- -->
+![](temporal-analyses.png)<!-- -->
 
 ``` r
 t.test (stats$value [stats$key == "contributors"])
@@ -241,3 +188,92 @@ t.test (stats$value [stats$key == "lines"])
     ## sample estimates:
     ## mean of x 
     ##  3.362109
+
+# Numbers of distinct contributors over time
+
+The preceding analysis demonstrates that contributions from other than
+primary package authors/maintainers evince a *relative* increase over
+time, but does not directly demonstrate that *numbers* of contributors
+increases at all. The following code implements one approach to
+identifying whether that occurs, through quantifying for each time
+period the number of (commits, lines) per author, ranking them, and
+estimating regression slopes for that period of time. Increases in
+actual numbers of contributors must then manifest through regression
+slopes becoming *less negative*.
+
+``` r
+library (magrittr)
+library (dplyr)
+library (ggplot2)
+dat <- readRDS ("results.Rds")
+nr <- vapply (dat, function (i)
+              ifelse (is.null (i), 0L, nrow (i)), integer (1))
+dat <- dat [which (nr > 0)]
+stats <- lapply (dat, function (i) {
+        # convert dates to quarterly fractions for grouping below
+        y <- as.integer (lubridate::year (i$date))
+        qtr <- ceiling (lubridate::month (i$date) / 3)
+        i$date <- y + (qtr - 1) / 4
+
+        # filter primary contributor
+        primary <- names (sort (table (i$name), decreasing = TRUE)) [1]
+        i <- filter (i, name != primary)
+
+        if (nrow (i) < 2)
+            return (NULL)
+
+        # decrease in relative contributions per author for that time period
+        # first for number of commits:
+        s1 <- group_by (i, date, name) %>%
+            summarise (n = length (name)) %>%
+            group_by (date) %>%
+            mutate (len = length (n)) %>%
+            filter (len > 1) %>%
+            group_by (date) %>%
+            mutate (n = sort (n / sum (n), decreasing = TRUE))
+        if (nrow (s1) > 0)
+        {
+            s1 <- group_by (s1, date) %>%
+            summarise (slope = summary (lm (n ~ seq (n)))$coefficients [2]) %>%
+            filter (is.finite (slope))
+        }
+        if (nrow (s1) > 0)
+            s1$var <- "commits"
+        else
+            s1 <- NULL
+
+        # then for lines of code:
+        s2 <- group_by (i, date, name) %>%
+            summarise (n = sum (additions)) %>%
+            group_by (date) %>%
+            mutate (len = length (n)) %>%
+            filter (len > 1) %>%
+            group_by (date) %>%
+            mutate (n = sort (n / sum (n), decreasing = TRUE))
+        if (nrow (s2) > 0)
+        {
+            s2 <- group_by (s2, date) %>%
+            summarise (slope = summary (lm (n ~ seq (n)))$coefficients [2]) %>%
+            filter (is.finite (slope))
+        }
+        if (nrow (s2) > 0)
+            s2$var <- "lines"
+        else
+            s2 <- NULL
+
+        bind_rows (s1, s2)
+    })
+```
+
+
+``` r
+stats <- stats [which (!sapply (stats, is.null))]
+stats <- data.frame (do.call (rbind, stats))
+
+ggplot (stats, aes (date, slope)) +
+    geom_point (colour = "lawngreen") +
+    geom_smooth (method = "lm") +
+    facet_grid (.~var, scales = "free")
+```
+
+![](authors-per-time-interval.png)<!-- -->
