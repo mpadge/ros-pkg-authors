@@ -19,7 +19,7 @@ knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
   fig.path = "",
-  echo = FALSE
+  echo = TRUE
 )
 ```
 
@@ -90,7 +90,7 @@ gh_cli <- ghql::GraphqlClient$new (
 
 Extracting all of the commit histories takes about 20 min or so to run:
 
-```{r summary-fakey, eval = FALSE}
+```{r summary-fakey, eval = FALSE, echo = TRUE}
 get_all_commits <- function (gh_cli)
 {
     st0 <- Sys.time ()
