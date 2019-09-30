@@ -154,7 +154,7 @@ dat2 <- data.frame (x = c (x1, x2),
 
 dat <- rbind (dat1, dat2)
 ```
-```{r rel-contr-ex-plot}
+```{r rel-contr-ex-plot, echo = FALSE}
 ggplot (dat, aes (x, y, colour = type, fill = type)) +
     geom_col (position = "dodge") +
     geom_line (lwd = 3, linetype = "dashed") +

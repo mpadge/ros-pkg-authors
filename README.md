@@ -115,14 +115,6 @@ contributors. While this is not necessarily directly so, it appears to
 us to provide the most direct insight into relative contributions of
 multiple authors, as depicted in the figure below.
 
-``` r
-ggplot (dat, aes (x, y, colour = type, fill = type)) +
-    geom_col (position = "dodge") +
-    geom_line (lwd = 3, linetype = "dashed") +
-    facet_grid (.~plot) +
-    theme (legend.position = c (0.9, 0.9))
-```
-
 <img src="rel-contr-ex-plot-1.png" width="100%" />
 
 While admittedly not particularly easy to interpret (sorry about
