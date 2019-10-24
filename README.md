@@ -64,7 +64,7 @@ gh_cli <- ghql::GraphqlClient$new (
 )
 ```
 
-## get commit history from github
+## Get commit history from github
 
 Extracting all of the commit histories takes about 20 min or so to run:
 
@@ -90,7 +90,7 @@ names (res) <- repos
 saveRDS (res, "results.Rds")
 ```
 
-## Analysing increases in numbers of contributors over time
+## Analyse increases in numbers of contributors over time
 
 In lieu of analysing official authors, which is untenable for reasons
 explained above, the following code analyses contributions in terms both
