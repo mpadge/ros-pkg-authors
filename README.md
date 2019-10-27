@@ -66,7 +66,8 @@ gh_cli <- ghql::GraphqlClient$new (
 
 ## Get commit history from github
 
-Extracting all of the commit histories takes about 20 min or so to run:
+The following code extracts all of the commit histories, and takes about
+20 min or so to run:
 
 ``` r
 get_all_commits <- function (gh_cli)
