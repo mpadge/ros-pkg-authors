@@ -66,7 +66,8 @@ gh_cli <- ghql::GraphqlClient$new (
 
 ## Get commit history from github
 
-Extracting all of the commit histories takes about 20 min or so to run:
+The following code extracts all of the commit histories, and takes about
+20 min or so to run:
 
 ``` r
 get_all_commits <- function (gh_cli)
@@ -79,7 +80,6 @@ get_all_commits <- function (gh_cli)
                    st <- hms::as_hms (round (st * (length (repos) - i)))
                    message (repos [i], ": ", i, " / ", length (repos),
                             "; estimated time left = ", st)
-                   saveRDS (res, "results.Rds")
                    return (res)
        })
 }
@@ -247,12 +247,9 @@ summary (lm (stats$slope [stats$var == "commits"] ~
 #> -0.65834 -0.17729  0.04009  0.23164  0.39455 
 #> 
 #> Coefficients:
-#>                                      Estimate Std. Error t value Pr(>|t|)
-#> (Intercept)                        -34.423917  14.535490  -2.368   0.0183
-#> stats$date[stats$var == "commits"]   0.016903   0.007207   2.345   0.0195
-#>                                     
-#> (Intercept)                        *
-#> stats$date[stats$var == "commits"] *
+#>                                      Estimate Std. Error t value Pr(>|t|)  
+#> (Intercept)                        -34.423917  14.535490  -2.368   0.0183 *
+#> stats$date[stats$var == "commits"]   0.016903   0.007207   2.345   0.0195 *
 #> ---
 #> Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 #> 

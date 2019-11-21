@@ -208,3 +208,57 @@ process_commit_history <- function (gh_cli, org = "ropensci", repo)
                 name = user,
                 stringsAsFactors = FALSE)
 }
+
+# This does not work, because even through it has `is:public`, it still returns
+# all the private repos.
+get_repo_names <- function (gh_cli, org = "RStudio", endCursor = NULL)
+{
+    after_txt <- ""
+    if (!is.null (endCursor))
+        after_txt <- paste0 ("after:\"", endCursor, "\"")
+
+    q <- paste0 ("{
+        search(query: \"", org, " is:public\", type: REPOSITORY, first:100, ", after_txt, ") {
+               repositoryCount
+               edges {
+                   node {
+                       ... on Repository {
+                           name
+                           }
+                       }
+                   }
+               pageInfo {
+                   hasNextPage
+                   endCursor
+               }
+           }
+        }")
+    qry <- ghql::Query$new()
+    qry$query('repos', q)
+
+    dat0 <- gh_cli$exec(qry$queries$repos) %>%
+        jsonlite::fromJSON ()
+    res <- dat0$data$search$edges
+
+    return (list (has_next_page = dat0$data$search$pageInfo$hasNextPage,
+                  endCursor = dat0$data$search$pageInfo$endCursor,
+                  repos = res [[1]] [1]))
+}
+
+#has_next_page <- TRUE
+#endCursor <- NULL
+#repos <- NULL
+#count <- 1
+#while (has_next_page)
+#{
+#    x <- get_repo_names (gh_cli, endCursor = endCursor)
+#    has_next_page <- x$has_next_page
+#    endCursor <- x$endCursor
+#    repos <- c (repos, x$repos [[1]])
+#    message ("\r [", count, "]; ", length (repos), " repos")
+#    count <- count + 1
+#}
+#repos <- repos [!grepl ("^[Rr][Ss]tudio", repos)]
+#con <- file ("rstudio-repos.txt")
+#writeLines (repos, con = con)
+#close (con)
