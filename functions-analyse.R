@@ -33,8 +33,17 @@ convert_date_to_quarter <- function (x)
 
 filter_out_primary_contributor <- function (x)
 {
-        primary <- names (sort (table (x$name), decreasing = TRUE)) [1]
-        dplyr::filter (x, name != primary)
+    primary <- names (sort (table (x$name), decreasing = TRUE)) [1]
+    dplyr::filter (x, name != primary)
+}
+
+# label as primary vs non-primary contributors
+label_contributors <- function (x)
+{
+    primary <- names (sort (table (x$name), decreasing = TRUE)) [1]
+    x$contrib <- "secondary"
+    x$contrib [x$name == primary] <- "primary"
+    return (x)
 }
 
 # Add a column to results of the stats_ functions with names of repos
@@ -118,5 +127,39 @@ stats_lines <- function (dat) {
         return (res)
     })
     dplyr::bind_rows (remove_empty (add_names (out)))
+}
+
+# proportion of commits by non-primary authors
+prop_np_commits <- function (dat)
+{
+    dat <- remove_empty_histories (dat)
+    dat <- lapply (dat, function (i) label_contributors (i))
+    out <- lapply (dat, function (i) {
+        temp <- convert_date_to_quarter (i)
+        if (nrow (temp) < 2)
+            return (NULL)
+
+        # decrease in relative contributions per author for that time period
+        # first for number of commits:
+        temp <- group_by (temp, date, contrib) %>%
+            summarise (n = length (contrib)) %>%
+            group_by (date) %>%
+            mutate (len = length (n)) %>%
+            filter (len > 1)
+        if (nrow (temp) > 0)
+        {
+            temp_p <- dplyr::filter (temp, contrib == "primary")
+            temp_s <- dplyr::filter (temp, contrib == "secondary")
+            temp_s$n <- temp_s$n / (temp_s$n + temp_p$n)
+            temp <- dplyr::select (temp_s, date, n)
+        } else
+            temp <- NULL
+            
+        return (temp)
+    })
+
+    dplyr::bind_rows (remove_empty (add_names (out))) %>%
+        dplyr::select (date, n, repo) %>%
+        dplyr::filter (!is.na (n))
 }
 
