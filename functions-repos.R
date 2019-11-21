@@ -1,6 +1,22 @@
+# Functions to extract repos and orgs for rOpenSci and RStudio packages
+
+# rOpenSci repos can be read directly from a registry:
+get_ros_repos <- function () {
+    x <- fromJSON (paste0 ("https://raw.githubusercontent.com/ropensci/",
+                           "roregistry/gh-pages/registry.json"))
+    pkg_names <- filter (x$packages, on_cran) %>% .$name
+    urls <- filter (x$packages, on_cran) %>% .$github
+    urls <- gsub ("https://github.com/", "", urls)
+    orgs <- vapply (urls, function (i) strsplit (i, "/") [[1]] [1],
+                    character (1))
+    repos <- vapply (urls, function (i) strsplit (i, "/") [[1]] [2],
+                     character (1))
+    data.frame (org = orgs, repo = repos, stringsAsFactors = FALSE)
+}
+
 # in lieu of an "official" list of packages, this function gets all the package
 # names that they deign as deserving of a hex sticker
-get_rstudio_repos <- function () {
+get_rstudio_repo_names <- function () {
     u <- "https://github.com/rstudio/hex-stickers/tree/master/PNG"
     x <- httr::GET (u) %>%
         httr::content (as = "parsed") %>%
@@ -47,5 +63,8 @@ get_org <- function (repo) {
     return (ret)
 }
 
-# repos <- get_rstudio_repos ()
-# orgs <- vapply (repos, function (i) get_org (i), character (1))
+get_rstudio_repos <- function () {
+    repos <- get_rstudio_repos ()
+    orgs <- vapply (repos, function (i) get_org (i), character (1))
+    data.frame (org = orgs, repo = repos, stringsAsFactors = FALSE)
+}

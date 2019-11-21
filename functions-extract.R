@@ -1,3 +1,4 @@
+# Functions to extract entire commit histories of repos
 
 get_pkg_authors <- function () # takes a minute or two ...
 {
@@ -244,21 +245,3 @@ get_repo_names <- function (gh_cli, org = "RStudio", endCursor = NULL)
                   endCursor = dat0$data$search$pageInfo$endCursor,
                   repos = res [[1]] [1]))
 }
-
-#has_next_page <- TRUE
-#endCursor <- NULL
-#repos <- NULL
-#count <- 1
-#while (has_next_page)
-#{
-#    x <- get_repo_names (gh_cli, endCursor = endCursor)
-#    has_next_page <- x$has_next_page
-#    endCursor <- x$endCursor
-#    repos <- c (repos, x$repos [[1]])
-#    message ("\r [", count, "]; ", length (repos), " repos")
-#    count <- count + 1
-#}
-#repos <- repos [!grepl ("^[Rr][Ss]tudio", repos)]
-#con <- file ("rstudio-repos.txt")
-#writeLines (repos, con = con)
-#close (con)
