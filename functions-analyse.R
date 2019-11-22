@@ -58,7 +58,8 @@ remove_empty <- function (res) {
     res [index]
 }
 
-stats_commits <- function (dat)
+# min_len is the minimal length over which a slope will be calculated
+stats_commits <- function (dat, min_len = 2)
 {
     dat <- remove_empty_histories (dat)
     out <- lapply (dat, function (i) {
@@ -73,7 +74,7 @@ stats_commits <- function (dat)
             summarise (n = length (name)) %>%
             group_by (date) %>%
             mutate (len = length (n)) %>%
-            filter (len > 1) %>%
+            filter (len >= min_len) %>%
             group_by (date) %>%
             mutate (n = sort (n / sum (n), decreasing = TRUE))
         if (nrow (temp) > 0)
@@ -95,7 +96,7 @@ stats_commits <- function (dat)
     dplyr::bind_rows (remove_empty (add_names (out)))
 }
 
-stats_lines <- function (dat) {
+stats_lines <- function (dat, min_len = 2) {
     dat <- remove_empty_histories (dat)
     out <- lapply (dat, function (i) {
         i <- convert_date_to_quarter (i) %>%
@@ -108,7 +109,7 @@ stats_lines <- function (dat) {
             summarise (n = sum (additions)) %>%
             group_by (date) %>%
             mutate (len = length (n)) %>%
-            filter (len > 1) %>%
+            filter (len >= min_len) %>%
             group_by (date) %>%
             mutate (n = sort (n / sum (n), decreasing = TRUE))
         if (nrow (res) > 0)
@@ -130,12 +131,17 @@ stats_lines <- function (dat) {
 }
 
 # proportion of commits by non-primary authors
-prop_np_commits <- function (dat)
+prop_np_commits <- function (dat, quarterly = TRUE)
 {
     dat <- remove_empty_histories (dat)
     dat <- lapply (dat, function (i) label_contributors (i))
     out <- lapply (dat, function (i) {
-        temp <- convert_date_to_quarter (i)
+        if (quarterly)
+            temp <- convert_date_to_quarter (i)
+        else {
+            temp <- i
+            temp$date <- 2019
+        }
         if (nrow (temp) < 2)
             return (NULL)
 

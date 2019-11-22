@@ -25,36 +25,25 @@ through official DESCRIPTION files would thus require comparison of
 these rates of increase with some kind of neutral, expected value, which
 seems impracticable, so alternative approaches are pursued here.
 
-The analyses mostly work via several functions defined in
-`function-defs.R`, loaded here, along with necessary libraries.
+The analyses mostly work via several functions defined in several
+`function-*.R` files, loaded here, along with necessary libraries.
 
 ``` r
 library (jsonlite)
 library (dplyr)
 library (magrittr)
 library (ggplot2)
-source ("function-defs.R")
+source ("functions-repos.R")
+source ("functions-extract.R")
+source ("functions-analyse.R")
 ```
 
 The functions mostly use the github graphql API to extract the full
-commit histories of all rOpenSci package repos. Not all of these are
-directly hosted on `github/ropensci`, and so github organisation names
-also need to be extracted.
-
-``` r
-x <- fromJSON("https://raw.githubusercontent.com/ropensci/roregistry/gh-pages/registry.json")
-pkg_names <- filter(x$packages, on_cran) %>% .$name
-urls <- filter(x$packages, on_cran) %>% .$github
-urls <- gsub ("https://github.com/", "", urls)
-orgs <- vapply (urls, function (i) strsplit (i, "/") [[1]] [1], character (1))
-repos <- vapply (urls, function (i) strsplit (i, "/") [[1]] [2], character (1))
-names (orgs) <- names (repos) <- repos
-```
-
-That produces two vectors of `orgs` and `repos`, so each rOpenSci
-package can be identified on github via `org/repo`. The extraction from
-the github graphql API requires a client to be established with the
-following code:
+commit histories of all rOpenSci package repos, and of RStudio packages
+granted the honour of being listed in their [“official” hex sticker
+page](https://github.com/rstudio/hex-stickers/tree/master/PNG). The
+extraction of commit histories from the github graphql API requires a
+client to be established with the following code:
 
 ``` r
 token <- Sys.getenv("GITHUB_GRAPHQL_TOKEN") # or whatever
@@ -64,240 +53,224 @@ gh_cli <- ghql::GraphqlClient$new (
 )
 ```
 
-## Get commit history from github
+## Get commit histories from github
 
-The following code extracts all of the commit histories, and takes about
-20 min or so to run:
+The objects of this analysis are the entire commit histories (for the
+default branch of a repository) of rOpenSci and RStudio repositories.
+The first functions obtain all associated repositories as a `data.frame`
+with columns for both repository name and associated github
+organization. The second column is necessary because not all
+repositories are directly and respectively hosted on
+[`github/ropensci`](https://github.com/ropensci) or
+[`github/rstudio`](https://github.com/rstudio). These data are extracted
+with the functions, `get_ros_repos()` and `get_rstudio_repos`. Commit
+histories can then be extracted by submitting these resultant
+`data.frame` objects to the single function, `get_all_commits()`. This
+function takes about 20 minutes or so to run for each of rOpenSci and
+RStudio, so the resultant data are saved to enable immediate re-loading
+in all subsequent analyses.
 
 ``` r
-get_all_commits <- function (gh_cli)
-{
-    st0 <- Sys.time ()
-    lapply (seq (repos), function (i) {
-                   res <- process_commit_history (gh_cli, orgs [i], repos [i])
-                   st <- difftime (Sys.time (), st0, units = "s") / i
-                   # st is time per repo to that point
-                   st <- hms::as_hms (round (st * (length (repos) - i)))
-                   message (repos [i], ": ", i, " / ", length (repos),
-                            "; estimated time left = ", st)
-                   return (res)
-       })
-}
+repos <- get_ros_repos ()
 system.time (
-             res <- get_all_commits (gh_cli)
+             dat_ros <- get_all_commits (gh_cli, repos)
              )
-names (res) <- repos
-saveRDS (res, "results.Rds")
+names (dat_ros) <- repos
+saveRDS (dat_ros, "results-ropensci.Rds")
+
+dat <- get_rstudio_repos ()
+system.time (
+             dat_rst <- get_all_commits (gh_cli, repos)
+             )
+names (dat_rst) <- repos
+saveRDS (dat_rst, "results-rstudio.Rds")
 ```
 
-## Analyse increases in numbers of contributors over time
+## Proportion of contributions from non-primary contributors
 
-In lieu of analysing official authors, which is untenable for reasons
-explained above, the following code analyses contributions in terms both
-of numbers of commits and numbers of lines of code committed. Numbers of
-contributors are quantified through aggregating numbers of both commits
-and lines of code over a defined time period – fixed at 3 months
-throughout all of the following, although could be easily modified – and
-grouping by unique contributor. Contributions from the primary
-contributor are removed from the analysis, so as only to count
-contributions from additional people other than the primary author. (It
-could be that the primary contributor is not the designated package
-maintainer, but that situation is neither considered nor addressed
-here.) The numbers are then converted to relative amounts for each time
-period, sorted in decreasing order, and then converted to a linear rate
-of decrease per additional unique contributor. This metric is derived
-for each package for each quarter in which sufficient data are
-available.
-
-Ordered contributions should generally decrease, but *lower* rates of
-decrease are taken here to imply greater numbers of additional
-contributors. While this is not necessarily directly so, it appears to
-us to provide the most direct insight into relative contributions of
-multiple authors, as depicted in the figure below.
-
-<img src="rel-contr-ex-plot-1.png" width="100%" />
-
-While admittedly not particularly easy to interpret (sorry about
-that\!), the figure is meant to demonstrate the abiding hypothesis of
-this analysis. Panel (A) shows two different relative rates of
-contribution, yet with both arising from the three distinct
-contributors. Panel (B) depicts the main hypothesis here, which is that
-reductions in the rate of decrease in relative contributions will
-generally reflect more contributors – the blue line (“c”) has a lower
-absolute slope because it has more contributors than the green line
-(“b”). It may nevertheless be that relatively lower slopes simply
-reflect more relatively equal contributions – illustrated by the red
-line (“a”) in Panel (A) having a lower slope than the green line (“b”),
-even though both reflect three contributors. *The following analysis
-assume that any arrangement of contributions by which successively
-greater numbers contribute relatively more reflect greater numbers of
-authors contributing to a package,* where through actual increases in
-number of authors, or relatively greater contributions by those making
-more minor contributions, or both.
-
-With that hopefully sufficiently clarified, let us proceed …
-
-# Numbers of distinct contributors over time
-
-The following code implements one approach to identifying whether
-numbers of contributors increases over time, through quantifying for
-each time period the number of (commits, lines) per author, ranking
-them, and estimating regression slopes for that period of time.
-Increases in actual numbers of contributors must then manifest through
-regression slopes becoming *less negative* over time.
+All of the following analyses focus on “non-primary contributors”, which
+are simply contributors other than the statistically dominant
+contributor. The first metric analysed here is the proportion of
+non-primary contributions, via the `prop_np_commits()` function.
 
 ``` r
-library (magrittr)
-library (dplyr)
-library (ggplot2)
-dat <- readRDS ("results.Rds")
-nr <- vapply (dat, function (i)
-              ifelse (is.null (i), 0L, nrow (i)), integer (1))
-dat <- dat [which (nr > 0)]
-stats <- lapply (dat, function (i) {
-        # convert dates to quarterly fractions for grouping below
-        y <- as.integer (lubridate::year (i$date))
-        qtr <- ceiling (lubridate::month (i$date) / 3)
-        i$date <- y + (qtr - 1) / 4
+np_commits_rst <- prop_np_commits (readRDS ("results-rstudio.Rds"))
+np_commits_rst$org <- "RStudio"
+np_commits_ros <- prop_np_commits (readRDS ("results-ropensci.Rds"))
+np_commits_ros$org <- "rOpenSci"
+results <- dplyr::bind_rows (np_commits_ros, np_commits_rst)
 
-        # filter primary contributor
-        primary <- names (sort (table (i$name), decreasing = TRUE)) [1]
-        i <- filter (i, name != primary)
+ggplot (results, aes (date, n)) +
+    geom_point (colour = "#9239F6") +
+    geom_smooth (colour = "#FF0076", method = "lm") +
+    facet_wrap (.~org)
+```
 
-        if (nrow (i) < 2)
-            return (NULL)
+<img src="prop_np_commits-1.png" width="100%" /> RStudio packages
+clearly have a statistically higher proportion of non-primary
+contributions:
 
-        # decrease in relative contributions per author for that time period
-        # first for number of commits:
-        s1 <- group_by (i, date, name) %>%
-            summarise (n = length (name)) %>%
-            group_by (date) %>%
-            mutate (len = length (n)) %>%
-            filter (len > 1) %>%
-            group_by (date) %>%
-            mutate (n = sort (n / sum (n), decreasing = TRUE))
-        if (nrow (s1) > 0)
-        {
-            suppressWarnings ({ # essentially perfect lm fit
-                s1 <- group_by (s1, date) %>%
-                summarise (slope = summary (lm (n ~ seq (n)))$coefficients [2]) %>%
-                filter (is.finite (slope))
-            })
-        }
-        if (nrow (s1) > 0)
-            s1$var <- "commits"
-        else
-            s1 <- NULL
+    #> mean (RStudio) = 0.369; mean (rOpenSci) = 0.264 [T = 7.77, df = 1227.1, p = 0.000000000000017]
 
-        # then for lines of code:
-        s2 <- group_by (i, date, name) %>%
-            summarise (n = sum (additions)) %>%
-            group_by (date) %>%
-            mutate (len = length (n)) %>%
-            filter (len > 1) %>%
-            group_by (date) %>%
-            mutate (n = sort (n / sum (n), decreasing = TRUE))
-        if (nrow (s2) > 0)
-        {
-            suppressWarnings ({ # essentially perfect lm fit
-                s2 <- group_by (s2, date) %>%
-                summarise (slope = summary (lm (n ~ seq (n)))$coefficients [2]) %>%
-                filter (is.finite (slope))
-            })
-        }
-        if (nrow (s2) > 0)
-            s2$var <- "lines"
-        else
-            s2 <- NULL
+The figure also clearly reveals that proportions of non-primary
+contributions for RStudio packages have actually decreased between the
+years 2010 and 2019 (although this decrease was not significant; T =
+-1.8; p = 0.069). There was no significant change for rOpenSci (T =
+-0.25; p = 0.8).
 
-        bind_rows (s1, s2)
-    })
-stats <- stats [which (!sapply (stats, is.null))]
-stats <- data.frame (do.call (rbind, stats))
+## Effect of package prominence
 
-ggplot (stats, aes (date, slope)) +
-    geom_point (colour = "lawngreen") +
-    geom_smooth (method = "lm") +
-    facet_grid (.~var, scales = "free")
+Packages that are more prominent may attract more non-primary
+contributions, and so these results may to some extent merely reflect
+differences in package prominence. (We use the term “prominence” here in
+lieu of “popularity”, with due connotation that prominence is an
+attribute that can be actively manipulated; in particular, RStudio has a
+commercial budget not available to rOpenSci, and which is able to be
+directed towards increasing the prominence of their packages.)
+Prominence is quantified here by the total number of package downloads
+divided by the time elapsed since a package’s first release. For that,
+we use the [`cranlogs` package](https://cranlogs.r-pkg.org/). Note that
+not all rOpenSci packages have been released on CRAN, and so prominence
+metrics will only exist for those which have. The extraction of
+downloads can take quite some time, so we save the results for
+subsequent analyses.
+
+``` r
+pkgs_rst <- names (readRDS ("results-rstudio.Rds"))
+x <- cranlogs::cran_downloads (pkgs_rst, from = "1997-04-01")
+saveRDS (x, file = "cran-rstudio.Rds")
+pkgs_ros <- names (readRDS ("results-ropensci.Rds"))
+x <- cranlogs::cran_downloads (pkgs_ros, from = "1997-04-01")
+saveRDS (x, file = "cran-ropensci.Rds")
+```
+
+Each of these is a single `data.frame` with columns for `date` (daily
+values from the specified `from` date), `count` of daily downloads, and
+`package` naming each requested package. The following function then
+converts these daily downloads for each package into a single measure of
+average daily downloads over the entire lifetime of a package.
+
+``` r
+x <- readRDS ("cran-rstudio.Rds")
+p_rst <- unlist (lapply (split (x, as.factor (x$package)), function (i) {
+                 first <- which (i$count > 0) [1]
+                 sum (i$count) / (nrow (i) - first + 1) }))
+x <- readRDS ("cran-ropensci.Rds")
+p_ros <- unlist (lapply (split (x, as.factor (x$package)), function (i) {
+                 first <- which (i$count > 0) [1]
+                 sum (i$count) / (nrow (i) - first + 1) }))
+```
+
+That of course raises the question of what those “prominence” scores
+look like?
+
+``` r
+dat_rst <- data.frame (package = names (p_rst),
+                       prominence = as.numeric (p_rst),
+                       org = "RStudio",
+                       stringsAsFactors = FALSE)
+dat_ros <- data.frame (package = names (p_ros),
+                       prominence = as.numeric (p_ros),
+                       org = "rOpenSci",
+                       stringsAsFactors = FALSE)
+dat <- rbind (dat_rst, dat_ros)
+dat$log_prominence <- log10 (dat$prominence)
+ggplot (dat, aes (x = org, y = log_prominence, fill = org)) + 
+      geom_violin (alpha = 0.7)
+```
+
+<img src="prominence-1.png" width="100%" />
+
+And perhaps unsurprisingly, RStudio packages are enormously more
+prominent that rOpenSci packages (noting that the scale is logarithmic).
+Does this prominence affect the proportions of non-primary
+contributions? For that we need a single measure of the proportion of
+commits aggregated over the entire history of each repo, extracted here
+with a `quarterly = FALSE` argument.
+
+``` r
+np_commits_rst <- prop_np_commits (readRDS ("results-rstudio.Rds"), quarterly = FALSE)
+np_commits_rst$org <- "RStudio"
+np_commits_ros <- prop_np_commits (readRDS ("results-ropensci.Rds"), quarterly = FALSE)
+np_commits_ros$org <- "rOpenSci"
+np_commits <- dplyr::bind_rows (np_commits_ros, np_commits_rst) %>%
+    dplyr::rename (package = repo)
+
+dat <- dplyr::left_join (dat, np_commits, by = c ("package", "org"))
+ggplot (dat, aes (x = log_prominence, y = n, colour = org)) +
+    geom_point () +
+    geom_smooth (method = "lm")
+#> Warning: Removed 58 rows containing non-finite values (stat_smooth).
+#> Warning: Removed 58 rows containing missing values (geom_point).
+```
+
+<img src="prom-non-primary-1.png" width="100%" />
+
+The two organizations follow categorically different trajectories. More
+prominent RStudio packages attract significantly greater proportions of
+non-primary contributions (T = 4.9, p = 0.000012), while more prominent
+rOpenSci packages tend to attract *lower* proportions of non-primary
+contributions, and so become more dominated by singular primary
+contributors, although this effect is not significant (T = -1.4, p =
+0.18).
+
+## Temporal patterns of non-primary contributions
+
+We now delve into more detailed analyses of the git commit histories,
+through analysing both numbers of commits and numbers of lines of code
+committed. We quantify numbers of distinct contributors, through
+aggregating numbers of both commits and lines of code over a defined
+time period – fixed at 3 months throughout all of the following,
+although could be easily modified – and grouping by unique contributor.
+Contributions from the primary contributor are removed from the
+analysis, so as only to count contributions from additional people other
+than the primary author. The numbers are then converted to relative
+amounts for each time period, sorted in decreasing order, and then
+converted to a linear rate of decrease per additional unique
+contributor. This metric is derived for each package for each quarter in
+which sufficient data are available. Ordered contributions should
+generally decrease, but *lower* rates of decrease are taken here to
+imply greater proportions of non-primary contributors. The metrics
+examined throughout the following are thus all negative slopes, with
+values approaching zero indicating greater proportions of non-primary
+contributions.
+
+``` r
+dat <- readRDS ("results-rstudio.Rds")
+commits_rst <- stats_commits (dat, min_len = 3)
+lines_rst <- stats_lines (dat, min_len = 3)
+np_commits_rst <- prop_np_commits (dat)
+dat <- readRDS ("results-ropensci.Rds")
+commits_ros <- stats_commits (dat, min_len = 3)
+lines_ros <- stats_lines (dat, min_len = 3)
+np_commits_ros <- prop_np_commits (dat)
+
+commits_rst$org <- "RStudio"
+lines_rst$org <- "RStudio"
+commits_ros$org <- "rOpenSci"
+lines_ros$org <- "rOpenSci"
+
+mean (commits_ros$slope, na.rm = TRUE); mean (commits_rst$slope, na.rm = TRUE)
+#> [1] -0.1971116
+#> [1] -0.08861197
+mean (lines_ros$slope, na.rm = TRUE); mean (lines_rst$slope, na.rm = TRUE)
+#> [1] -0.2778733
+#> [1] -0.1451193
+
+results <- rbind (commits_rst,
+                  commits_ros,
+                  lines_rst,
+                  lines_ros) %>%
+    dplyr::filter (!is.na (slope))
+
+ggplot (results, aes (date, slope)) +
+    geom_point (colour = "#9239F6") +
+    geom_smooth (colour = "#FF0076", method = "lm") +
+    facet_wrap (.~var + org)
 ```
 
 <img src="authors-per-time-interval-1.png" width="100%" />
 
-Over the times analysed for the rOpenSci repos (which obviously in some
-cases extend well prior to the actual beginnings of the organization),
-repos have on average seen a progressive increase in the relative
-proportions of minor contributions – that is, either numbers of
-non-primary contributors have increased, or the relative contributions
-of non-primary contributors have become more equal, or both.
-
-This is the closest I can get to demonstrating that the “number of
-maintainers per package change\[s\] through time”. Are these changes
-significant?
-
-``` r
-summary (lm (stats$slope [stats$var == "commits"] ~
-             stats$date [stats$var == "commits"]))
-#> 
-#> Call:
-#> lm(formula = stats$slope[stats$var == "commits"] ~ stats$date[stats$var == 
-#>     "commits"])
-#> 
-#> Residuals:
-#>      Min       1Q   Median       3Q      Max 
-#> -0.65834 -0.17729  0.04009  0.23164  0.39455 
-#> 
-#> Coefficients:
-#>                                      Estimate Std. Error t value Pr(>|t|)  
-#> (Intercept)                        -34.423917  14.535490  -2.368   0.0183 *
-#> stats$date[stats$var == "commits"]   0.016903   0.007207   2.345   0.0195 *
-#> ---
-#> Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-#> 
-#> Residual standard error: 0.2742 on 398 degrees of freedom
-#> Multiple R-squared:  0.01363,    Adjusted R-squared:  0.01115 
-#> F-statistic: 5.501 on 1 and 398 DF,  p-value: 0.0195
-summary (lm (stats$slope [stats$var == "lines"] ~
-             stats$date [stats$var == "lines"]))
-#> 
-#> Call:
-#> lm(formula = stats$slope[stats$var == "lines"] ~ stats$date[stats$var == 
-#>     "lines"])
-#> 
-#> Residuals:
-#>      Min       1Q   Median       3Q      Max 
-#> -0.51396 -0.37189  0.06667  0.28661  0.55334 
-#> 
-#> Coefficients:
-#>                                    Estimate Std. Error t value Pr(>|t|)
-#> (Intercept)                      -24.121576  18.305120  -1.318    0.188
-#> stats$date[stats$var == "lines"]   0.011705   0.009076   1.290    0.198
-#> 
-#> Residual standard error: 0.3453 on 398 degrees of freedom
-#> Multiple R-squared:  0.004162,   Adjusted R-squared:  0.00166 
-#> F-statistic: 1.663 on 1 and 398 DF,  p-value: 0.1979
-```
-
-Yep, relative numbers of commits from successive non-primary
-contributors manifest a significant increase over time. Equivalent
-changes in lines of code are not significant. The left-hand panel
-suggests that one reason for these increases is an increase in the
-number of quarters in which contributions from non-primary contributors
-were all equal, yielding slopes of relative change equal to zero. This
-itself suggests either very few contributors, likely only two, or very
-small contributions of one or two commits, or both. These may be readily
-excluded in the above code by replacing the lines
-
-``` r
-filter (len > 1)
-```
-
-with
-
-``` r
-filter (len > 2)
-```
-
-… doing so, however, entirely removes the significance of any result. I
-would nevertheless suggests that it is appropriate to leave these
-values, as they still represent valid non-primary contributions no
-matter how minor.
+Non-primary contributions in terms of both commits and lines of code
+have thus increased over time in both organizations, with values being
+clearly higher for RStudio than rOpenSci.
