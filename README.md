@@ -237,12 +237,12 @@ contributions.
 
 ``` r
 dat <- readRDS ("results-rstudio.Rds")
-commits_rst <- stats_commits (dat, min_len = 3)
-lines_rst <- stats_lines (dat, min_len = 3)
+commits_rst <- stats_commits (dat)
+lines_rst <- stats_lines (dat)
 np_commits_rst <- prop_np_commits (dat)
 dat <- readRDS ("results-ropensci.Rds")
-commits_ros <- stats_commits (dat, min_len = 3)
-lines_ros <- stats_lines (dat, min_len = 3)
+commits_ros <- stats_commits (dat)
+lines_ros <- stats_lines (dat)
 np_commits_ros <- prop_np_commits (dat)
 
 commits_rst$org <- "RStudio"
@@ -251,11 +251,11 @@ commits_ros$org <- "rOpenSci"
 lines_ros$org <- "rOpenSci"
 
 mean (commits_ros$slope, na.rm = TRUE); mean (commits_rst$slope, na.rm = TRUE)
-#> [1] -0.1971116
-#> [1] -0.08861197
+#> [1] -0.3324508
+#> [1] -0.1510639
 mean (lines_ros$slope, na.rm = TRUE); mean (lines_rst$slope, na.rm = TRUE)
-#> [1] -0.2778733
-#> [1] -0.1451193
+#> [1] -0.5132642
+#> [1] -0.2597777
 
 results <- rbind (commits_rst,
                   commits_ros,
