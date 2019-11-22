@@ -33,6 +33,7 @@ library (jsonlite)
 library (dplyr)
 library (magrittr)
 library (ggplot2)
+library (cranlogs)
 source ("functions-repos.R")
 source ("functions-extract.R")
 source ("functions-analyse.R")
@@ -91,19 +92,23 @@ saveRDS (dat_rst, "results-rstudio.Rds")
 All of the following analyses focus on “non-primary contributors”, which
 are simply contributors other than the statistically dominant
 contributor. The first metric analysed here is the proportion of
-non-primary contributions, via the `prop_np_commits()` function.
+non-primary contributions, via the `prop_np_commits()` function, which
+by default yields quarterly-aggregates of contributions.
 
 ``` r
 np_commits_rst <- prop_np_commits (readRDS ("results-rstudio.Rds"))
 np_commits_rst$org <- "RStudio"
 np_commits_ros <- prop_np_commits (readRDS ("results-ropensci.Rds"))
 np_commits_ros$org <- "rOpenSci"
-results <- dplyr::bind_rows (np_commits_ros, np_commits_rst)
+results <- bind_rows (np_commits_ros, np_commits_rst) %>%
+    rename (non_primary = n)
+    
 
-ggplot (results, aes (date, n)) +
+ggplot (results, aes (date, non_primary)) +
     geom_point (colour = "#9239F6") +
     geom_smooth (colour = "#FF0076", method = "lm") +
-    facet_wrap (.~org)
+    facet_wrap (.~org) +
+    theme (axis.title.y = element_text (angle = 90))
 ```
 
 <img src="prop_np_commits-1.png" width="100%" /> RStudio packages
@@ -121,9 +126,9 @@ years 2010 and 2019 (although this decrease was not significant; T =
 ## Effect of package prominence
 
 Packages that are more prominent may attract more non-primary
-contributions, and so these results may to some extent merely reflect
-differences in package prominence. (We use the term “prominence” here in
-lieu of “popularity”, with due connotation that prominence is an
+contributions, and so the preceding results may to some extent merely
+reflect differences in package prominence. (We use the term “prominence”
+here in lieu of “popularity”, with due connotation that prominence is an
 attribute that can be actively manipulated; in particular, RStudio has a
 commercial budget not available to rOpenSci, and which is able to be
 directed towards increasing the prominence of their packages.)
@@ -137,10 +142,10 @@ subsequent analyses.
 
 ``` r
 pkgs_rst <- names (readRDS ("results-rstudio.Rds"))
-x <- cranlogs::cran_downloads (pkgs_rst, from = "1997-04-01")
+x <- cran_downloads (pkgs_rst, from = "1997-04-01")
 saveRDS (x, file = "cran-rstudio.Rds")
 pkgs_ros <- names (readRDS ("results-ropensci.Rds"))
-x <- cranlogs::cran_downloads (pkgs_ros, from = "1997-04-01")
+x <- cran_downloads (pkgs_ros, from = "1997-04-01")
 saveRDS (x, file = "cran-ropensci.Rds")
 ```
 
@@ -176,7 +181,8 @@ dat_ros <- data.frame (package = names (p_ros),
 dat <- rbind (dat_rst, dat_ros)
 dat$log_prominence <- log10 (dat$prominence)
 ggplot (dat, aes (x = org, y = log_prominence, fill = org)) + 
-      geom_violin (alpha = 0.7)
+    geom_violin (alpha = 0.7) +
+    theme (axis.title.y = element_text (angle = 90))
 ```
 
 <img src="prominence-1.png" width="100%" />
@@ -196,10 +202,12 @@ np_commits_ros$org <- "rOpenSci"
 np_commits <- dplyr::bind_rows (np_commits_ros, np_commits_rst) %>%
     dplyr::rename (package = repo)
 
-dat <- dplyr::left_join (dat, np_commits, by = c ("package", "org"))
-ggplot (dat, aes (x = log_prominence, y = n, colour = org)) +
+dat <- dplyr::left_join (dat, np_commits, by = c ("package", "org")) %>%
+    rename (non_primary = n)
+ggplot (dat, aes (x = log_prominence, y = non_primary, colour = org)) +
     geom_point () +
-    geom_smooth (method = "lm")
+    geom_smooth (method = "lm") +
+    theme (axis.title.y = element_text (angle = 90))
 #> Warning: Removed 58 rows containing non-finite values (stat_smooth).
 #> Warning: Removed 58 rows containing missing values (geom_point).
 ```
@@ -266,7 +274,8 @@ results <- rbind (commits_rst,
 ggplot (results, aes (date, slope)) +
     geom_point (colour = "#9239F6") +
     geom_smooth (colour = "#FF0076", method = "lm") +
-    facet_wrap (.~var + org)
+    facet_wrap (.~var + org) +
+    theme (axis.title.y = element_text (angle = 90))
 ```
 
 <img src="authors-per-time-interval-1.png" width="100%" />
