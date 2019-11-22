@@ -5,13 +5,17 @@ get_ros_repos <- function () {
     x <- fromJSON (paste0 ("https://raw.githubusercontent.com/ropensci/",
                            "roregistry/gh-pages/registry.json"))
     pkg_names <- filter (x$packages, on_cran) %>% .$name
+    categories <- filter (x$packages, on_cran) %>% .$ropensci_category
     urls <- filter (x$packages, on_cran) %>% .$github
     urls <- gsub ("https://github.com/", "", urls)
     orgs <- vapply (urls, function (i) strsplit (i, "/") [[1]] [1],
                     character (1))
     repos <- vapply (urls, function (i) strsplit (i, "/") [[1]] [2],
                      character (1))
-    data.frame (org = orgs, repo = repos, stringsAsFactors = FALSE)
+    data.frame (org = orgs,
+                repo = repos,
+                category = categories,
+                stringsAsFactors = FALSE)
 }
 
 # in lieu of an "official" list of packages, this function gets all the package

@@ -283,3 +283,96 @@ ggplot (results, aes (date, slope)) +
 Non-primary contributions in terms of both commits and lines of code
 have thus increased over time in both organizations, with values being
 clearly higher for RStudio than rOpenSci.
+
+## rOpenSci package categories
+
+We now repeat the above analyses for sub-sets of packages within
+categories designed by rOpenSci. These categories are provided in the
+`get_ros_repos()`, summarised thus:
+
+``` r
+pkgs <- get_ros_repos ()
+tab <- table (pkgs$category)
+knitr::kable (data.frame (name = names (tab),
+                          num_packages = as.integer (tab)))
+```
+
+| name               | num\_packages |
+| :----------------- | ------------: |
+| altmetrics         |             2 |
+| data-access        |            82 |
+| data-analysis      |             4 |
+| data-extraction    |             3 |
+| data-publication   |             5 |
+| data-tools         |            15 |
+| data-visualization |             4 |
+| databases          |             4 |
+| geospatial         |            21 |
+| http-tools         |            10 |
+| image-processing   |             6 |
+| literature         |            22 |
+| scalereprod        |            13 |
+| security           |             2 |
+| taxonomy           |             7 |
+
+We now repeat the analysis immediately above of relative slopes of
+non-primary contributions over time for packages within each of these
+categories. The baseline for comparison formed from all packages
+considered together has a mean value of -0.332, with an increase per
+year of 0.0169. The equivalent RStudio values are a mean of -0.151 with
+an increase per year of `r slope_rst`.
+
+``` r
+category_stats <- function (pkgs, commits, category = "data-access")
+{
+    cat_pkgs <- pkgs$repo [which (pkgs$category %in% category)]
+    cat_commits <- commits_ros [commits_ros$repo %in% cat_pkgs, ] %>%
+        filter (!is.na (slope))
+    slope <- mn <- NA
+    if (nrow (cat_commits) > 1)
+    {
+        mod <- summary (lm (cat_commits$slope ~ cat_commits$date))
+        slope <- mod$coefficients [2, 1]
+        mn <- mean (cat_commits$slope, na.rm = TRUE)
+    }
+    c (mean_slope = mn, change = slope)
+}
+res <- t (vapply (unique (pkgs$category [!is.na (pkgs$category)]), function (i)
+                  category_stats (pkgs, commits, i), numeric (2)))
+res <- data.frame (category = c ("RStudio-all", "rOpenSci", rownames (res)),
+                   mean_slope = c (mn_rst, mn_ros, res [, 1]),
+                   change = c (slope_rst, slope_ros, res [, 2]),
+                   stringsAsFactors = FALSE) %>%
+    filter (!is.na (change))
+# Leave Rstudio and rOpenSci at stop, and sort all other rows
+index <- c (1, 2, 2 + order (res$mean_slope [3:nrow (res)], decreasing = TRUE))
+knitr::kable (res [index, ], digits = c (0, 3, 3), row.names = FALSE)
+```
+
+| category           | mean\_slope |  change |
+| :----------------- | ----------: | ------: |
+| RStudio-all        |     \-0.151 |   0.019 |
+| rOpenSci           |     \-0.332 |   0.017 |
+| image-processing   |     \-0.012 |   0.024 |
+| http-tools         |     \-0.221 | \-0.086 |
+| databases          |     \-0.223 | \-0.005 |
+| data-visualization |     \-0.280 | \-0.053 |
+| data-publication   |     \-0.300 |   0.055 |
+| scalereprod        |     \-0.323 |   0.008 |
+| data-access        |     \-0.326 |   0.022 |
+| data-extraction    |     \-0.333 |   0.000 |
+| literature         |     \-0.361 |   0.016 |
+| geospatial         |     \-0.364 |   0.062 |
+| taxonomy           |     \-0.414 |   0.020 |
+| data-tools         |     \-0.423 |   0.037 |
+| data-analysis      |     \-0.594 | \-0.224 |
+
+And the image processing category is the one and only category that
+outperforms RStudio in terms both of overall non-primary commits
+(through having the lowest `mean_slope` of all), and in that tendency
+increasing more strongly over time (`change` = 0.024). The following
+three categories (http-tools, databases, data-visualization) all have
+relatively low mean values, yet actually become more negative over time,
+indicating *decreasing* degrees of community engagement in the code of
+these packages. The next category of data-publication has the highest
+rate of increase in engagement over time (`change =` 0.055).

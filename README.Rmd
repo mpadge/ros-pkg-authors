@@ -310,3 +310,81 @@ ggplot (results, aes (date, slope)) +
 Non-primary contributions in terms of both commits and lines of code have thus
 increased over time in both organizations, with values being clearly higher for
 RStudio than rOpenSci.
+
+## rOpenSci package categories
+
+We now repeat the above analyses for sub-sets of packages within categories
+designed by rOpenSci. These categories are provided in the `get_ros_repos()`,
+summarised thus:
+
+```{r ros-categories}
+pkgs <- get_ros_repos ()
+tab <- table (pkgs$category)
+knitr::kable (data.frame (name = names (tab),
+                          num_packages = as.integer (tab)))
+```
+```{r ros-baseline-slope, echo = FALSE}
+mod_rst <- summary (lm (commits_rst$slope ~ commits_rst$date))
+slope_rst <- signif (mod_rst$coefficients [2, 1], 3)
+mn_rst <- signif (mean (commits_rst$slope, na.rm = TRUE), 3)
+mod_ros <- summary (lm (commits_ros$slope ~ commits_ros$date))
+slope_ros <- signif (mod_ros$coefficients [2, 1], 3)
+mn_ros <- signif (mean (commits_ros$slope, na.rm = TRUE), 3)
+```
+
+We now repeat the analysis immediately above of relative slopes of non-primary
+contributions over time for packages within each of these categories. The
+baseline for comparison formed from all packages considered together has a mean
+value of `r mn_ros`, with an increase per year of `r slope_ros`. The equivalent
+RStudio values are a mean of `r mn_rst` with an increase per year of `r
+slope_rst`.
+
+```{r ros-baseline-slope-extra, echo = FALSE}
+# precise values to use below
+mn_ros <- mean (commits_ros$slope, na.rm = TRUE)
+slope_ros <- mod_ros$coefficients [2, 1]
+mn_rst <- mean (commits_rst$slope, na.rm = TRUE)
+slope_rst <- mod_rst$coefficients [2, 1]
+```
+
+```{r one-category}
+category_stats <- function (pkgs, commits, category = "data-access")
+{
+    cat_pkgs <- pkgs$repo [which (pkgs$category %in% category)]
+    cat_commits <- commits_ros [commits_ros$repo %in% cat_pkgs, ] %>%
+        filter (!is.na (slope))
+    slope <- mn <- NA
+    if (nrow (cat_commits) > 1)
+    {
+        mod <- summary (lm (cat_commits$slope ~ cat_commits$date))
+        slope <- mod$coefficients [2, 1]
+        mn <- mean (cat_commits$slope, na.rm = TRUE)
+    }
+    c (mean_slope = mn, change = slope)
+}
+res <- t (vapply (unique (pkgs$category [!is.na (pkgs$category)]), function (i)
+                  category_stats (pkgs, commits, i), numeric (2)))
+res <- data.frame (category = c ("RStudio-all", "rOpenSci", rownames (res)),
+                   mean_slope = c (mn_rst, mn_ros, res [, 1]),
+                   change = c (slope_rst, slope_ros, res [, 2]),
+                   stringsAsFactors = FALSE) %>%
+    filter (!is.na (change))
+# Leave Rstudio and rOpenSci at stop, and sort all other rows
+index <- c (1, 2, 2 + order (res$mean_slope [3:nrow (res)], decreasing = TRUE))
+knitr::kable (res [index, ], digits = c (0, 3, 3), row.names = FALSE)
+```
+```{r category-summaries, echo = FALSE}
+cats <- res$category [index] [3:nrow (res)]
+```
+
+
+And the image processing category is the one and only category that outperforms
+RStudio in terms both of overall non-primary commits (through having the lowest
+`mean_slope` of all), and in that tendency increasing more strongly over time
+(`change` = `r signif (res$change[res$category=="image-processing"], 2)`). The
+following three categories (`r paste0 (cats [2:4], collapse = ", ")`) all have
+relatively low mean values, yet actually become more negative over time,
+indicating *decreasing* degrees of community engagement in the code of these
+packages. The next category of `r cats [5]` has the highest rate of increase in
+engagement over time (`change =` `r signif (res$change[res$category==cats[5]], 2)`).
+
