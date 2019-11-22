@@ -235,13 +235,13 @@ analysis, so as only to count contributions from additional people other
 than the primary author. The numbers are then converted to relative
 amounts for each time period, sorted in decreasing order, and then
 converted to a linear rate of decrease per additional unique
-contributor. This metric is derived for each package for each quarter in
-which sufficient data are available. Ordered contributions should
-generally decrease, but *lower* rates of decrease are taken here to
-imply greater proportions of non-primary contributors. The metrics
-examined throughout the following are thus all negative slopes, with
-values approaching zero indicating greater proportions of non-primary
-contributions.
+contributor. This property – referred to from hereon as “non-primary
+contribution rate” – is strictly negative, but will approach one in the
+ideal situation of all contributors to a package having equal
+contributions. The more negative the non-primary contribution rate, the
+more a package is dominated by a single contributor. This metric is
+derived for each package for each quarter in which sufficient data are
+available.
 
 ``` r
 dat <- readRDS ("results-rstudio.Rds")
@@ -275,6 +275,7 @@ ggplot (results, aes (date, slope)) +
     geom_point (colour = "#9239F6") +
     geom_smooth (colour = "#FF0076", method = "lm") +
     facet_wrap (.~var + org) +
+    ylab ("Non-primary contribution rate") +
     theme (axis.title.y = element_text (angle = 90))
 ```
 
@@ -315,12 +316,12 @@ knitr::kable (data.frame (name = names (tab),
 | security           |             2 |
 | taxonomy           |             7 |
 
-We now repeat the analysis immediately above of relative slopes of
+We now repeat the analysis immediately above of relative rates of
 non-primary contributions over time for packages within each of these
 categories. The baseline for comparison formed from all packages
-considered together has a mean value of -0.332, with an increase per
-year of 0.0169. The equivalent RStudio values are a mean of -0.151 with
-an increase per year of `r slope_rst`.
+considered together has a mean non-primary contribution rate of -0.332,
+with an increase per year of 0.0169. The equivalent RStudio values are a
+mean of -0.151 with an increase per year of 0.0192.
 
 ``` r
 category_stats <- function (pkgs, commits, category = "data-access")
@@ -340,39 +341,43 @@ category_stats <- function (pkgs, commits, category = "data-access")
 res <- t (vapply (unique (pkgs$category [!is.na (pkgs$category)]), function (i)
                   category_stats (pkgs, commits, i), numeric (2)))
 res <- data.frame (category = c ("RStudio-all", "rOpenSci", rownames (res)),
-                   mean_slope = c (mn_rst, mn_ros, res [, 1]),
+                   npcr = c (npcr_rst, npcr_ros, res [, 1]),
                    change = c (slope_rst, slope_ros, res [, 2]),
                    stringsAsFactors = FALSE) %>%
     filter (!is.na (change))
 # Leave Rstudio and rOpenSci at stop, and sort all other rows
-index <- c (1, 2, 2 + order (res$mean_slope [3:nrow (res)], decreasing = TRUE))
+index <- c (1, 2, 2 + order (res$npcr [3:nrow (res)], decreasing = TRUE))
 knitr::kable (res [index, ], digits = c (0, 3, 3), row.names = FALSE)
 ```
 
-| category           | mean\_slope |  change |
-| :----------------- | ----------: | ------: |
-| RStudio-all        |     \-0.151 |   0.019 |
-| rOpenSci           |     \-0.332 |   0.017 |
-| image-processing   |     \-0.012 |   0.024 |
-| http-tools         |     \-0.221 | \-0.086 |
-| databases          |     \-0.223 | \-0.005 |
-| data-visualization |     \-0.280 | \-0.053 |
-| data-publication   |     \-0.300 |   0.055 |
-| scalereprod        |     \-0.323 |   0.008 |
-| data-access        |     \-0.326 |   0.022 |
-| data-extraction    |     \-0.333 |   0.000 |
-| literature         |     \-0.361 |   0.016 |
-| geospatial         |     \-0.364 |   0.062 |
-| taxonomy           |     \-0.414 |   0.020 |
-| data-tools         |     \-0.423 |   0.037 |
-| data-analysis      |     \-0.594 | \-0.224 |
+| category           |    npcr |  change |
+| :----------------- | ------: | ------: |
+| RStudio-all        | \-0.151 |   0.019 |
+| rOpenSci           | \-0.332 |   0.017 |
+| image-processing   | \-0.012 |   0.024 |
+| http-tools         | \-0.221 | \-0.086 |
+| databases          | \-0.223 | \-0.005 |
+| data-visualization | \-0.280 | \-0.053 |
+| data-publication   | \-0.300 |   0.055 |
+| scalereprod        | \-0.323 |   0.008 |
+| data-access        | \-0.326 |   0.022 |
+| data-extraction    | \-0.333 |   0.000 |
+| literature         | \-0.361 |   0.016 |
+| geospatial         | \-0.364 |   0.062 |
+| taxonomy           | \-0.414 |   0.020 |
+| data-tools         | \-0.423 |   0.037 |
+| data-analysis      | \-0.594 | \-0.224 |
 
 And the image processing category is the one and only category that
 outperforms RStudio in terms both of overall non-primary commits
-(through having the lowest `mean_slope` of all), and in that tendency
-increasing more strongly over time (`change` = 0.024). The following
-three categories (http-tools, databases, data-visualization) all have
-relatively low mean values, yet actually become more negative over time,
-indicating *decreasing* degrees of community engagement in the code of
-these packages. The next category of data-publication has the highest
-rate of increase in engagement over time (`change =` 0.055).
+(through having the lowest non-primary commit rate of all), and in that
+tendency increasing more strongly over time (`change` = 0.024). The
+following three categories (http-tools, databases, data-visualization)
+all have relatively low mean non-primary commit values, yet actually
+become more negative over time, indicating *decreasing* degrees of
+community engagement in the code of these packages. The next category of
+data-publication has the second-highest rate of increase in engagement
+over time (`change =` 0.055). The highest rate of increase in engagement
+comes from the geospatial category, to which most of my packages belong.
+So at least I am potentially part of one small yet positive contribution
+to the broader rOpenSci community.
