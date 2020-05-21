@@ -73,7 +73,7 @@ established with the following code:
 token <- Sys.getenv("GITHUB_GRAPHQL_TOKEN") # or whatever
 gh_cli <- ghql::GraphqlClient$new (
     url = "https://api.github.com/graphql",
-    headers = httr::add_headers (Authorization = paste0 ("Bearer ", token))
+    headers = list (Authorization = paste0 ("Bearer ", token))
 )
 ```
 
@@ -126,7 +126,7 @@ results <- bind_rows (np_commits_ros, np_commits_rst) %>%
 
 ggplot (results, aes (date, non_primary)) +
     geom_point (colour = "#9239F6") +
-    geom_smooth (colour = "#FF0076", method = "lm") +
+    geom_smooth (colour = "#FF0076", method = "lm", formula = y ~ x) +
     facet_wrap (.~org) +
     theme (axis.title.y = element_text (angle = 90))
 ```
@@ -230,7 +230,7 @@ dat <- dplyr::left_join (dat, np_commits, by = c ("package", "org")) %>%
     rename (non_primary = n)
 ggplot (dat, aes (x = log_prominence, y = non_primary, colour = org)) +
     geom_point () +
-    geom_smooth (method = "lm") +
+    geom_smooth (method = "lm", formula = y ~ x) +
     theme (axis.title.y = element_text (angle = 90))
 ```
 ```{r prom-non-primary-stats, echo = FALSE}

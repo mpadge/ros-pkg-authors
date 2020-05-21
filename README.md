@@ -50,7 +50,7 @@ client to be established with the following code:
 token <- Sys.getenv("GITHUB_GRAPHQL_TOKEN") # or whatever
 gh_cli <- ghql::GraphqlClient$new (
     url = "https://api.github.com/graphql",
-    headers = httr::add_headers (Authorization = paste0 ("Bearer ", token))
+    headers = list (Authorization = paste0 ("Bearer ", token))
 )
 ```
 
@@ -106,7 +106,7 @@ results <- bind_rows (np_commits_ros, np_commits_rst) %>%
 
 ggplot (results, aes (date, non_primary)) +
     geom_point (colour = "#9239F6") +
-    geom_smooth (colour = "#FF0076", method = "lm") +
+    geom_smooth (colour = "#FF0076", method = "lm", formula = y ~ x) +
     facet_wrap (.~org) +
     theme (axis.title.y = element_text (angle = 90))
 ```
@@ -206,7 +206,7 @@ dat <- dplyr::left_join (dat, np_commits, by = c ("package", "org")) %>%
     rename (non_primary = n)
 ggplot (dat, aes (x = log_prominence, y = non_primary, colour = org)) +
     geom_point () +
-    geom_smooth (method = "lm") +
+    geom_smooth (method = "lm", formula = y ~ x) +
     theme (axis.title.y = element_text (angle = 90))
 #> Warning: Removed 58 rows containing non-finite values (stat_smooth).
 #> Warning: Removed 58 rows containing missing values (geom_point).
@@ -277,6 +277,7 @@ ggplot (results, aes (date, slope)) +
     facet_wrap (.~var + org) +
     ylab ("Non-primary contribution rate") +
     theme (axis.title.y = element_text (angle = 90))
+#> `geom_smooth()` using formula 'y ~ x'
 ```
 
 <img src="authors-per-time-interval-1.png" width="100%" />
@@ -301,18 +302,18 @@ knitr::kable (data.frame (name = names (tab),
 | name               | num\_packages |
 | :----------------- | ------------: |
 | altmetrics         |             2 |
-| data-access        |            82 |
+| data-access        |            79 |
 | data-analysis      |             4 |
 | data-extraction    |             3 |
 | data-publication   |             5 |
-| data-tools         |            15 |
+| data-tools         |            14 |
 | data-visualization |             4 |
 | databases          |             4 |
-| geospatial         |            21 |
-| http-tools         |            10 |
-| image-processing   |             6 |
+| geospatial         |            20 |
+| http-tools         |            11 |
+| image-processing   |             5 |
 | literature         |            22 |
-| scalereprod        |            13 |
+| scalereprod        |            12 |
 | security           |             2 |
 | taxonomy           |             7 |
 
@@ -359,11 +360,11 @@ knitr::kable (res [index, ], digits = c (0, 3, 3), row.names = FALSE)
 | databases          | \-0.223 | \-0.005 |
 | data-visualization | \-0.280 | \-0.053 |
 | data-publication   | \-0.300 |   0.055 |
-| scalereprod        | \-0.323 |   0.008 |
-| data-access        | \-0.326 |   0.022 |
+| scalereprod        | \-0.317 |   0.011 |
+| data-access        | \-0.319 |   0.023 |
 | data-extraction    | \-0.333 |   0.000 |
 | literature         | \-0.361 |   0.016 |
-| geospatial         | \-0.364 |   0.062 |
+| geospatial         | \-0.375 |   0.070 |
 | taxonomy           | \-0.414 |   0.020 |
 | data-tools         | \-0.423 |   0.037 |
 | data-analysis      | \-0.594 | \-0.224 |
